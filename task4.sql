@@ -39,4 +39,4 @@ WHERE id = 2001;
 DELETE BorrowingRecords 
 WHERE id = 2001;
 
-select * from AuditTrail
+select * from AuditTrail;
