@@ -56,7 +56,7 @@ INSERT INTO BorrowingRecords (book_id, student_id, borrow_date, return_date, sta
 VALUES (1002, 1, DATE '2023-12-01', NULL, TRUE);
 
 INSERT INTO BorrowingRecords (book_id, student_id, borrow_date, return_date, status)
-VALUES (1003, 1,DATE '2023-12-01', NULL, TRUE);
+VALUES (1003, 1,DATE '2023-12-01', SYSDATE, TRUE);
 
 INSERT INTO BorrowingRecords (book_id, student_id, borrow_date, return_date, status)
 VALUES (1004, 1,DATE '2023-12-01', NULL, TRUE);
@@ -66,3 +66,6 @@ INSERT INTO BorrowingRecords (book_id, student_id, borrow_date, return_date, sta
 VALUES ( 1005, 2 ,DATE '2023-12-01', NULL, TRUE);
 INSERT INTO BorrowingRecords (book_id, student_id, borrow_date, return_date, status)
 VALUES ( 1002, 2 ,DATE '2023-12-01', NULL, TRUE);
+
+
+commit;
