@@ -1,12 +1,10 @@
 -- 1 Over due Notifications
 CREATE OR REPLACE PROCEDURE OverdueNotifications
 IS
-   
     overdue_days INT;
     notification_date DATE := SYSDATE;
 
 BEGIN
-   
     INSERT INTO NotificationLogs (student_id, book_id, overdue_days, notification_date)
     SELECT 
         br.student_id,
@@ -14,12 +12,15 @@ BEGIN
         TRUNC(SYSDATE - br.return_date) AS overdue_days,
         notification_date
     FROM BorrowingRecords br
-    INNER JOIN Books b ON br.book_id = b.id
+    INNER JOIN user_1.Books b ON br.book_id = b.id
     WHERE 
         br.return_date IS NOT NULL 
         AND TRUNC(SYSDATE - br.return_date) > 7 
-        AND br.status = 'overdue';
+        AND br.status = 1; -- Assuming status TRUE is represented as 1
+
+    COMMIT; -- Add a commit if this is not part of a larger transaction
 END OverdueNotifications;
+
 
 -- 2 late fee dynamic calculation  
 
@@ -51,8 +52,8 @@ BEGIN
         -- Fetching the book type fee rate
         SELECT fee_rate
         INTO v_fee_rate
-        FROM BookTypes
-        WHERE id = (SELECT type_id FROM Books WHERE id = v_book_id);
+        FROM user_1.BookTypes
+        WHERE id = (SELECT type_id FROM user_1.Books WHERE id = v_book_id);
         
         -- Calculate the fee amount
         v_fee_amount := v_overdue_days * v_fee_rate;
@@ -143,9 +144,11 @@ BEGIN
 END;
 
 
-SELECT SID, USERNAME, STATUS
-FROM V$SESSION
-ORDER BY USERNAME;
+-- SELECT SID, USERNAME, STATUS
+-- FROM V$SESSION
+-- ORDER BY USERNAME;
+--task 10 test
+
 -- 5 Borrowing history 
 DECLARE
   
@@ -161,13 +164,13 @@ DECLARE
                NVL(p.amount, 0) AS penalty_amount,
                NVL(p.reason, 'No penalty') AS penalty_reason 
           FROM BorrowingRecords BR 
-          JOIN Books b ON BR.book_id = b.id
+          JOIN user_1.Books b ON BR.book_id = b.id
           JOIN Penalties p ON BR.student_id = p.student_id
           WHERE BR.student_id = Bstudent_id;  
 
 
     VBook_id BorrowingRecords.book_id%TYPE;
-    VBook_title Books.title%TYPE;
+    VBook_title user_1.Books.title%TYPE;
     Vborrow_date BorrowingRecords.borrow_date%TYPE;
     Vreturn_date BorrowingRecords.return_date%TYPE;
     Vstatus VARCHAR2(20);
@@ -210,14 +213,14 @@ END;
 
 -- 6 Safe Return Process with Transactions
 
-CREATE OR REPLACE PROCEDURE ProcessLateReturns(student_id_in NUMBER)
-AS
+DECLARE
     overdue_penalty NUMBER;
+    student_id NUMBER := 2; -- Replace with the desired student ID
 BEGIN
-    -- Cursor to fetch book IDs for the student with overdue books
-    FOR rec IN (SELECT book_id 
-                FROM BorrowingRecords 
-                WHERE student_id = student_id_in AND status = FALSE) LOOP
+    -- Start a loop to fetch overdue books for the given student
+    FOR rec IN (SELECT book_id
+                FROM BorrowingRecords
+                WHERE student_id = student_id AND status = FALSE) LOOP
 
         BEGIN
             -- Calculate penalty dynamically for overdue books
@@ -226,36 +229,41 @@ BEGIN
             -- Update penalty in Penalties table
             IF overdue_penalty > 0 THEN
                 INSERT INTO Penalties (student_id, amount, reason)
-                VALUES (student_id_in, overdue_penalty, 'Late Return');
+                VALUES (student_id, overdue_penalty, 'Late Return');
             END IF;
 
             -- Mark the book as returned
             UPDATE BorrowingRecords
-            SET status = TRUE, return_date = SYSDATE --true --returned
+            SET status = TRUE, return_date = SYSDATE
             WHERE book_id = rec.book_id;
+
         EXCEPTION
             WHEN OTHERS THEN
+                -- Log the error and rollback the transaction
                 DBMS_OUTPUT.PUT_LINE('Error while processing return for book ID: ' || rec.book_id);
                 ROLLBACK;
+                RETURN; -- Exit the block to prevent further processing
         END;
-    END LOOP;
-    COMMIT;
-    DBMS_OUTPUT.PUT_LINE('Books returned successfully for student ID: ' || student_id_in);
-END ProcessLateReturns;
 
-DECLARE
-    student_id NUMBER := 2; 
-BEGIN
- 
-    ProcessLateReturns(student_id);
+    END LOOP;
+
+    -- Commit the transaction if everything completes successfully
+    COMMIT;
+    DBMS_OUTPUT.PUT_LINE('Books returned successfully for student ID: ' || student_id);
+
+EXCEPTION
+    WHEN OTHERS THEN
+        -- Handle any unexpected errors and rollback changes
+        DBMS_OUTPUT.PUT_LINE('An error occurred. Rolling back all changes.');
+        ROLLBACK;
 END;
 
 
 -- 7 book availabity report 
 DECLARE
-    v_book_id          Books.id%TYPE;
-    v_title            Books.title%TYPE;
-    v_author           Books.author%TYPE;
+    v_book_id          user_1.Books.id%TYPE;
+    v_title            user_1.Books.title%TYPE;
+    v_author           user_1.Books.author%TYPE;
     v_availability     VARCHAR2(20);
     v_student_name     Students.name%TYPE;
     v_overdue_days     NUMBER;
@@ -280,7 +288,7 @@ BEGIN
                    WHEN BR.return_date < SYSDATE THEN TRUNC(SYSDATE) - TRUNC(BR.return_date)
                    ELSE 0
                END AS overdue_days
-        FROM Books b
+        FROM user_1.Books b
         LEFT JOIN BorrowingRecords BR ON b.id = BR.book_id
         LEFT JOIN Students s ON BR.student_id = s.id
     ) LOOP
@@ -308,9 +316,9 @@ EXCEPTION
 END;
 
 --8 Automated Suspension
+-- Procedure to suspend students based on penalty threshold
 
 CREATE OR REPLACE PROCEDURE suspend_students(p_penalty_threshold IN NUMBER) IS
-
 BEGIN
     FOR rec IN (
         SELECT student_id, SUM(amount) AS total_penalty
@@ -319,21 +327,39 @@ BEGIN
         HAVING SUM(amount) > p_penalty_threshold
     ) LOOP
         UPDATE Students
-        SET membership_status = FALSE --suspended
+        SET membership_status = FALSE -- suspended
         WHERE id = rec.student_id;
 
         DBMS_OUTPUT.PUT_LINE('Student ID ' || rec.student_id || ' suspended due to penalties exceeding $' || p_penalty_threshold);
-
     END LOOP;
-END;
+END suspend_students;
+/
 
-DECLARE
-p_penalty_threshold Number := 50;
+-- Anonymous PL/SQL block to call the procedure
 BEGIN
-    
-    suspend_students(p_penalty_threshold);
-
+    suspend_students(50); -- Pass the penalty threshold as an argument
 END;
+
+
+--12 deadlock 
+--user1
+set serveroutput on;
+BEGIN
+    UPDATE Books SET available = 'FALSE' WHERE id = 1001;
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Error in User 1 Transaction 1: ' || SQLERRM);
+        ROLLBACK;
+END; 
+
+set serveroutput on;
+BEGIN
+   UPDATE MANAGER_USER.BorrowingRecords SET status = 'TRUE' WHERE book_id = 1001;
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Error in User 1 Transaction 1: ' || SQLERRM);
+        ROLLBACK;
+END; 
 
 
 alter session set "_oracle_script"=true;
