@@ -22,7 +22,8 @@ GRANT INSERT ON user_1.BookTypes to user_2;
 GRANT INSERT ON user_1.Books to user_2;
 
 --user 1  task 10,11
-update SYS.BorrowingRecords set status= True where id=2001;
+
+update MANAGER_USER.BorrowingRecords set status= True where id=2001;
 
 commit;
 
@@ -37,7 +38,7 @@ END;
 
 set serveroutput on;
 BEGIN
-   UPDATE sys.BorrowingRecords SET status = 'TRUE' WHERE book_id = 1001;
+   UPDATE MANAGER_USER.BorrowingRecords SET status = 'TRUE' WHERE book_id = 1001;
 EXCEPTION
     WHEN OTHERS THEN
         DBMS_OUTPUT.PUT_LINE('Error in User 1 Transaction 1: ' || SQLERRM);

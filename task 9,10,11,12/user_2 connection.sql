@@ -18,14 +18,15 @@ VARIABLE student_id_var NUMBER;
 BEGIN  
     SELECT student_id  
     INTO :student_id_var  
-    FROM sys.BorrowingRecords  
+    FROM MANAGER_USER.BorrowingRecords  
     WHERE id = 2001  -- Reference the borrowing record locked by User 1  
     FOR UPDATE;  --'for update' try to lock the row
 END;  
-/ 
+
+
 
 -- Insert a penalty with the same user1 id
-INSERT INTO sys.Penalties ( student_id, amount, reason, borrowing_id)  
+INSERT INTO MANAGER_USER.Penalties ( student_id, amount, reason, borrowing_id)  
 VALUES (:student_id_var, 50.00, 'Late return', 2001);  
 
 -- Commit the transaction  
@@ -34,7 +35,7 @@ COMMIT;
 
 set serveroutput on;
 BEGIN
-   UPDATE sys.BorrowingRecords SET status = 'TRUE' WHERE book_id = 1001;
+   UPDATE MANAGER_USER.BorrowingRecords SET status = 'TRUE' WHERE book_id = 1001;
 EXCEPTION
     WHEN OTHERS THEN
         DBMS_OUTPUT.PUT_LINE('Error in User 1 Transaction 1: ' || SQLERRM);

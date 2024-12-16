@@ -82,14 +82,14 @@ END;
 
 --3 borrowing validation 
 CREATE OR REPLACE TRIGGER Borrowing_validation
-BEFORE INSERT ON sys.BorrowingRecords
+BEFORE INSERT ON BorrowingRecords
 FOR EACH ROW
 DECLARE 
 overdue_count int ;
 borrowd_count int ;
 
 BEGIN 
- SELECT COUNT(*) INTO overdue_count FROM sys.BorrowingRecords
+ SELECT COUNT(*) INTO overdue_count FROM BorrowingRecords
     WHERE student_id = :NEW.student_id
     AND return_date IS NULL 
     AND borrow_date < SYSDATE ;
@@ -98,7 +98,7 @@ BEGIN
         RAISE_APPLICATION_ERROR(-20001, 'Student has overdue books and cannot borrow more');
     END IF;
    
-   SELECT COUNT(*) INTO  borrowd_count FROM sys.BorrowingRecords
+   SELECT COUNT(*) INTO  borrowd_count FROM BorrowingRecords
     WHERE student_id = :NEW.student_id
     AND return_date IS NULL;
 
@@ -109,8 +109,43 @@ BEGIN
 END;
 
 --4 
+CREATE OR REPLACE TRIGGER Update_Or_Delete_BorrowingRecord
+BEFORE DELETE OR UPDATE ON BorrowingRecords
+FOR EACH ROW
+BEGIN
+    IF UPDATING THEN
+        INSERT INTO AuditTrail (table_name, operation, old_data, new_data, time_stamp)
+        VALUES (
+            'BorrowingRecords',
+            'UPDATE',         
+            'book_id=' || :OLD.book_id || ', student_id=' || :OLD.student_id || 
+            ', borrow_date=' || :OLD.borrow_date || ', return_date=' || :OLD.return_date || 
+            ', status=' || :OLD.status,  
+            'book_id=' || :NEW.book_id || ', student_id=' || :NEW.student_id || 
+            ', borrow_date=' || :NEW.borrow_date || ', return_date=' || :NEW.return_date || 
+            ', status=' || :NEW.status,  
+            CURRENT_TIMESTAMP     -- Timestamp of the operation
+         );
+        END IF;
+
+    IF DELETING THEN
+        INSERT INTO AuditTrail (table_name, operation, old_data, new_data, time_stamp)
+        VALUES (
+            'BorrowingRecords', 
+            'DELETE',           
+            'book_id=' || :OLD.book_id || ', student_id=' || :OLD.student_id || 
+            ', borrow_date=' || :OLD.borrow_date || ', return_date=' || :OLD.return_date || 
+            ', status=' || :OLD.status,  
+            NULL, 
+            CURRENT_TIMESTAMP     -- Timestamp of the operation
+          );
+         END IF;
+END;
 
 
+SELECT SID, USERNAME, STATUS
+FROM V$SESSION
+ORDER BY USERNAME;
 -- 5 Borrowing history 
 DECLARE
   

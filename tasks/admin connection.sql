@@ -5,7 +5,7 @@ author varchar2(50) NOT NULL,
 available boolean DEFAULT(TRUE) CHECK (available IN (TRUE, FALSE)),
 type_id int ,
 FOREIGN KEY (type_id) REFERENCES BookTypes(id)
-)
+)--user 1
 
 CREATE TABLE Students(
 id int GENERATED ALWAYS as IDENTITY(START with 1 INCREMENT by 1) PRIMARY KEY ,
@@ -20,7 +20,7 @@ student_id int,
 borrow_date date,
 return_date date,
 status boolean DEFAULT(TRUE) CHECK (status IN (TRUE, FALSE)),
-FOREIGN KEY (book_id) REFERENCES Books(id),
+FOREIGN KEY (book_id) REFERENCES user_1.Books(id),
 FOREIGN KEY (student_id) REFERENCES Students(id),
 CHECK (borrow_date <= return_date)
 )

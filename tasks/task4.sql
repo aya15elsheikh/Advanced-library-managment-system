@@ -40,3 +40,10 @@ DELETE BorrowingRecords
 WHERE id = 2001;
 
 select * from AuditTrail;
+
+
+UPDATE BorrowingRecords
+SET return_date = TO_DATE('2024-12-20', 'YYYY-MM-DD')
+WHERE id = 2001;
+
+
