@@ -36,8 +36,9 @@ INSERT INTO BorrowingRecords (book_id, student_id, borrow_date, return_date, sta
 VALUES (1004, 1,DATE '2023-12-01', NULL, TRUE);
 
 
-INSERT INTO BorrowingRecords (book_id, student_id, borrow_date, return_date, status)
-VALUES ( 1005, 2 ,DATE '2023-12-01', NULL, TRUE);
+-- INSERT INTO BorrowingRecords (book_id, student_id, borrow_date, return_date, status)
+-- VALUES ( 1005, 2 ,DATE '2023-12-01', NULL, TRUE);
+
 INSERT INTO BorrowingRecords (book_id, student_id, borrow_date, return_date, status)
 VALUES ( 1002, 2 ,DATE '2023-12-01', NULL, TRUE);
 
@@ -55,3 +56,13 @@ VALUES (2, 1002, 2, TO_DATE('2024-11-23', 'YYYY-MM-DD'));
 
 commit;
 
+
+
+-- test task 3 
+
+INSERT INTO BorrowingRecords (book_id, student_id, borrow_date, return_date, status)
+VALUES (1001, 1, DATE '2024-12-14', NULL, TRUE);
+
+
+INSERT INTO BorrowingRecords (book_id, student_id, borrow_date, return_date, status)
+VALUES (1002, 1, DATE '2024-12-14', NULL, TRUE);
