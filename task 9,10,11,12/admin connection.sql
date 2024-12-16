@@ -18,6 +18,7 @@ V.sql_fulltext "wating session sql statment "from v$session w join v$sql v on w.
 --to solve the blocking situation
 --commit; or rollback;
 --ALTER SYSTEM KILL SESSION ' b.sid,b.serial';
+--ALTER SYSTEM KILL SESSION 'sid,serial#';
 
 GRANT SELECT, UPDATE ON BorrowingRecords TO user_1,user_2;
 GRANT SELECT, UPDATE, INSERT ON Penalties TO user_1,user_2;
